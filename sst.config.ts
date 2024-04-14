@@ -59,8 +59,7 @@ export default $config({
     });
 
     // Chat Handler ------------------------------------------------------
-    // DynamoDB Streamと紐付いたLambda関数を作成
-    const subscriber = table.subscribe({
+    const chatHandler = new sst.aws.Function("DscChatHandler", {
       handler: "src/api/chat.handler",
       link: [table],
     });
@@ -78,7 +77,7 @@ export default $config({
       {
         apiId: wsApi.id,
         integrationType: "AWS_PROXY",
-        integrationUri: subscriber.function.arn,
+        integrationUri: chatHandler.arn,
         integrationMethod: "POST",
         payloadFormatVersion: "1.0",
       }
@@ -95,7 +94,7 @@ export default $config({
       {
         apiId: wsApi.id,
         integrationType: "AWS_PROXY",
-        integrationUri: subscriber.function.arn,
+        integrationUri: chatHandler.arn,
         integrationMethod: "POST",
         payloadFormatVersion: "1.0",
       }
@@ -112,7 +111,7 @@ export default $config({
       {
         apiId: wsApi.id,
         integrationType: "AWS_PROXY",
-        integrationUri: subscriber.function.arn,
+        integrationUri: chatHandler.arn,
         integrationMethod: "POST",
         payloadFormatVersion: "1.0",
       }
@@ -122,6 +121,15 @@ export default $config({
       routeKey: "message",
       authorizationType: "NONE",
       target: pulumi.interpolate`integrations/${messageIntegration.id}`,
+    });
+
+    // DynamoDB Streams --------------------------------------------------
+    const subscriber = table.subscribe({
+      handler: "src/api/trigger.handler",
+      link: [table],
+      environment: {
+        WS_API_URL: wsApi.apiEndpoint,
+      },
     });
 
     // Astro -------------------------------------------------------------

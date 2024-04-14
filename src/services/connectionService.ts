@@ -21,6 +21,14 @@ export class ConnectionService {
     Configuration
   );
 
+  /** 接続一覧 */
+  async listConnections() {
+    const { data: connections } = await ConnectionEntity.query
+      .orderByCreatedAt({})
+      .go({ pages: "all" });
+    return connections;
+  }
+
   /** 特定の人物が接続を開始する */
   async startConnection({ participantName }: { participantName: string }) {
     const connection: ConnectionEntityType = {
