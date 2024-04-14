@@ -6,32 +6,33 @@ import {
 } from "@/entities/connection";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import type { AttributeValue } from "@aws-sdk/client-dynamodb";
+import { MessageEntity, type MessageEntityType } from "@/entities/message";
 
 export const handler: DynamoDBStreamHandler = async (event) => {
   // トリガーされた接続情報をすべて取得。他のエンティティなら無視
   // 参考：ElectroDBへのパース方法: https://electrodb.dev/en/reference/parse/#dynamo-streams
-  const connections = event.Records.map((record) =>
+  const messages = event.Records.map((record) =>
     // NOTE: SDK v2におけるDynamoDB.Converter.unmarshallは、@aws-sdk/util-dynamodbに移行されている
     unmarshall(record.dynamodb!.NewImage! as Record<string, AttributeValue>)
   )
     .map((item) => {
-      if (item._k !== undefined || item._k !== null) {
-        const { data: connection } = ConnectionEntity.parse({ Item: item });
-        return connection;
+      if (item._k === "01") {
+        const { data: message } = MessageEntity.parse({ Item: item });
+        return message;
       }
       return null;
     })
-    .filter((item): item is ConnectionEntityType => item !== null);
+    .filter((item): item is MessageEntityType => item !== null);
 
   // WebSocket API
   const api = new ApiGatewayManagementApi({
     endpoint: process.env.WS_API_URL,
   });
-  const postCalls = connections.map(async ({ connectionId }) => {
-    console.log(`Sending message to ${connectionId}`);
+  const postCalls = messages.map(async (message) => {
+    console.log(`Sending message to ${message.connectionId}`);
     return await api.postToConnection({
-      ConnectionId: connectionId,
-      Data: JSON.stringify(event),
+      ConnectionId: message.connectionId,
+      Data: JSON.stringify(message),
     });
   });
   const result = await Promise.all(postCalls);
