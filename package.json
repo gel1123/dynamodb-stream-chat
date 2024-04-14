@@ -13,9 +13,22 @@
     "@astrojs/check": "^0.5.10",
     "@astrojs/svelte": "^5.4.0",
     "@astrojs/tailwind": "^5.1.0",
+    "@aws-sdk/client-dynamodb": "^3.554.0",
     "astro": "^4.6.1",
+    "astro-sst": "^2.41.2",
+    "electrodb": "^2.13.1",
+    "sst": "^3.0.1",
     "svelte": "^4.2.14",
     "tailwindcss": "^3.4.3",
-    "typescript": "^5.4.5","sst":"^3.0.1","astro-sst":"^2.41.2"
+    "typescript": "^5.4.5",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@pulumi/aws": "^6.30.0",
+    "@pulumi/pulumi": "^3.112.0",
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.12",
+    "@types/aws-lambda": "^8.10.137",
+    "@types/uuid": "^9.0.8"
   }
 }
