@@ -9,29 +9,14 @@ export const MessageEntity = new Entity(
       service: "dsc",
     },
     attributes: {
-      /** 接続ID */
-      connectionId: {
-        type: "string",
-        required: true,
-        readOnly: true,
-      },
-      /** コレクション問い合わせ時の並び順制御キー。メッセージエンティティは固定で10 */
-      _k: {
-        type: "string",
-        required: true,
-        readOnly: true,
-        // https://electrodb.dev/en/modeling/attributes/#hidden
-        hidden: true,
-        default: "10",
-      },
       /** メッセージID */
       messageId: {
         type: "string",
         required: true,
         readOnly: true,
       },
-      /** 参加者ID */
-      participantId: {
+      /** 接続ID */
+      connectionId: {
         type: "string",
         required: true,
         readOnly: true,
@@ -48,23 +33,16 @@ export const MessageEntity = new Entity(
         required: true,
         readOnly: false,
       },
-      /** DynamoDBのTTL */
-      ttl: {
-        type: "number",
-        required: false,
-        readOnly: false,
-      },
     },
     indexes: {
-      byConnectionId: {
-        collection: ["connection"],
+      orderByCreatedAt: {
         pk: {
           field: "pk",
-          composite: ["connectionId"],
+          composite: [],
         },
         sk: {
           field: "sk",
-          composite: ["_k", "createdAt", "messageId"],
+          composite: ["createdAt", "messageId"],
         },
       },
     },

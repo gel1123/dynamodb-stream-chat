@@ -1,22 +1,19 @@
 import { ApiGatewayManagementApi } from "@aws-sdk/client-apigatewaymanagementapi";
 import type { DynamoDBBatchResponse, DynamoDBStreamHandler } from "aws-lambda";
-import {
-  ConnectionEntity,
-  type ConnectionEntityType,
-} from "@/entities/connection";
+import { ConnectionEntity } from "@/entities/connection";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import type { AttributeValue } from "@aws-sdk/client-dynamodb";
 import { MessageEntity, type MessageEntityType } from "@/entities/message";
 
 export const handler: DynamoDBStreamHandler = async (event) => {
-  // トリガーされた接続情報をすべて取得。他のエンティティなら無視
+  // トリガーされたメッセージをすべて取得。他のエンティティなら無視
   // 参考：ElectroDBへのパース方法: https://electrodb.dev/en/reference/parse/#dynamo-streams
   const messages = event.Records.map((record) =>
     // NOTE: SDK v2におけるDynamoDB.Converter.unmarshallは、@aws-sdk/util-dynamodbに移行されている
     unmarshall(record.dynamodb!.NewImage! as Record<string, AttributeValue>)
   )
     .map((item) => {
-      if (item._k === "01") {
+      if (item.__edb_e__ === "Message") {
         const { data: message } = MessageEntity.parse({ Item: item });
         return message;
       }
@@ -24,15 +21,21 @@ export const handler: DynamoDBStreamHandler = async (event) => {
     })
     .filter((item): item is MessageEntityType => item !== null);
 
+  // 現在WebSocket APIに接続しているIDをすべて取得
+  const { data: connections } = await ConnectionEntity.query
+    .connections({})
+    .go({ pages: "all" });
   // WebSocket API
   const api = new ApiGatewayManagementApi({
     endpoint: process.env.WS_API_URL,
   });
-  const postCalls = messages.map(async (message) => {
-    console.log(`Sending message to ${message.connectionId}`);
+  // すべての接続者にメッセージを送信
+  // NOTE: 仮にルーム機能を実装して、ルームごとの接続者にメッセージを送信するなら、ConnectionEntityにルームIDを追加するなどのアプローチが考えられる
+  const postCalls = connections.map(async ({ connectionId }) => {
+    console.log(`Sending message to ${connectionId}`);
     return await api.postToConnection({
-      ConnectionId: message.connectionId,
-      Data: JSON.stringify(message),
+      ConnectionId: connectionId,
+      Data: JSON.stringify(messages),
     });
   });
   const result = await Promise.all(postCalls);
