@@ -17,6 +17,7 @@ export const handler: DynamoDBStreamHandler = async (event) => {
       );
     })
     .map((item) => {
+      console.log("parsed item", item);
       if (item.__edb_e__ === "Message") {
         const { data: message } = MessageEntity.parse({ Item: item });
         return message;
