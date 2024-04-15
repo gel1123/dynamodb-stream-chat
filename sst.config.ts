@@ -105,6 +105,40 @@ export default $config({
       authorizationType: "NONE",
       target: pulumi.interpolate`integrations/${disconnectIntegration.id}`,
     });
+    // デフォルトルート
+    const defaultIntegration = new aws.apigatewayv2.Integration(
+      "DscDefaultIntegration",
+      {
+        apiId: wsApi.id,
+        integrationType: "AWS_PROXY",
+        integrationUri: chatHandler.arn,
+        integrationMethod: "POST",
+        payloadFormatVersion: "1.0",
+      }
+    );
+    const defaultRoute = new aws.apigatewayv2.Route("DscDefaultRoute", {
+      apiId: wsApi.id,
+      routeKey: "$default",
+      authorizationType: "NONE",
+      target: pulumi.interpolate`integrations/${defaultIntegration.id}`,
+    });
+    // ステージの指定
+    const stage = new aws.apigatewayv2.Stage("DscWsApiStage", {
+      apiId: wsApi.id,
+      name: $app.stage,
+      autoDeploy: true,
+    });
+    // chatHandlerをコールできる権限
+    // 参考: https://www.pulumi.com/ai/answers/6hiobuc3otmKxAJcGzkZ6E/lambda-and-api-gateway-integration-in-aws
+    const chatInvokePermission = new aws.lambda.Permission(
+      "DscChatInvokePermission",
+      {
+        action: "lambda:InvokeFunction",
+        function: chatHandler.arn,
+        principal: "apigateway.amazonaws.com",
+        sourceArn: pulumi.interpolate`${wsApi.executionArn}/*/*`,
+      }
+    );
 
     // DynamoDB Streams --------------------------------------------------
     const subscriber = table.subscribe({
@@ -119,7 +153,8 @@ export default $config({
     new sst.aws.Astro("DscAstro", {
       link: [table],
       environment: {
-        PUBLIC_WS_API_URL: wsApi.apiEndpoint,
+        WS_API_URL: wsApi.apiEndpoint,
+        STAGE: $app.stage,
       },
     });
   },

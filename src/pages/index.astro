@@ -1,7 +1,8 @@
 ---
 import { MessageEntity } from "@/entities/message";
 import BaseLayout from "@/layouts/BaseLayout.astro";
-const wsApiUrl = import.meta.env.PUBLIC_WS_API_URL;
+import { Resource } from "sst";
+const wsApiUrl = `${import.meta.env.WS_API_URL}/${import.meta.env.STAGE}/`;
 const { data: messages } = await MessageEntity.query
   .orderByCreatedAt({})
   .go({ pages: "all" });
@@ -9,6 +10,7 @@ const { data: messages } = await MessageEntity.query
 
 <BaseLayout title="dynamodb-stream-chat">
   <h2>dynamodb-stream-chat</h2>
+  <p>{wsApiUrl}</p>
   <div id="messages" class="mt-4">
     <ul>
       {

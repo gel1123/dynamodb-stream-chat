@@ -22,6 +22,13 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
         statusCode: 200,
         body: "Disconnected",
       };
+    case "$default":
+      // ルート誤り
+      console.log(`[${connectionId}] Invalid route.`);
+      return {
+        statusCode: 400,
+        body: "Invalid route",
+      };
   }
   return { statusCode: 200, body: "Data sent." };
 };
