@@ -4,9 +4,9 @@ import { v4 } from "uuid";
 
 export const POST: APIRoute = async (args) => {
   try {
-    const formData = await args.request.formData();
-    const messageBody = formData.get("messageBody")?.toString();
-    const connectionId = formData.get("connectionId")?.toString();
+    const json = await args.request.json();
+    const messageBody = json.messageBody;
+    const connectionId = json.connectionId;
     if (!messageBody) {
       return new Response(
         JSON.stringify({

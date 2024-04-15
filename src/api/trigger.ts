@@ -8,10 +8,14 @@ import { MessageEntity, type MessageEntityType } from "@/entities/message";
 export const handler: DynamoDBStreamHandler = async (event) => {
   // トリガーされたメッセージをすべて取得。他のエンティティなら無視
   // 参考：ElectroDBへのパース方法: https://electrodb.dev/en/reference/parse/#dynamo-streams
-  const messages = event.Records.map((record) =>
-    // NOTE: SDK v2におけるDynamoDB.Converter.unmarshallは、@aws-sdk/util-dynamodbに移行されている
-    unmarshall(record.dynamodb!.NewImage! as Record<string, AttributeValue>)
-  )
+  const messages = event.Records.filter((record) => record.dynamodb?.NewImage)
+    .map((record) => {
+      // NOTE: SDK v2におけるDynamoDB.Converter.unmarshallは、@aws-sdk/util-dynamodbに移行されている
+      console.log("record.dynamodb!.NewImage", record.dynamodb!.NewImage!);
+      return unmarshall(
+        record.dynamodb!.NewImage! as Record<string, AttributeValue>
+      );
+    })
     .map((item) => {
       if (item.__edb_e__ === "Message") {
         const { data: message } = MessageEntity.parse({ Item: item });
@@ -20,6 +24,13 @@ export const handler: DynamoDBStreamHandler = async (event) => {
       return null;
     })
     .filter((item): item is MessageEntityType => item !== null);
+
+  console.log("messages", messages);
+  if (messages.length === 0) {
+    return {
+      batchItemFailures: [],
+    };
+  }
 
   // 現在WebSocket APIに接続しているIDをすべて取得
   const { data: connections } = await ConnectionEntity.query

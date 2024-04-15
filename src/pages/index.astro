@@ -58,6 +58,7 @@ const { data: messages } = await MessageEntity.query
       "connectionId"
     ) as HTMLInputElement;
     connectionId.value = ws.url.split("/").pop() as string;
+    console.log("[onopen] ", connectionId.value);
   };
 
   // 受信したメッセージを表示する
@@ -99,12 +100,18 @@ const { data: messages } = await MessageEntity.query
     const messageBodyInput = document.getElementById(
       "messageBody"
     ) as HTMLInputElement;
+    const connectionIdInput = document.getElementById(
+      "connectionId"
+    ) as HTMLInputElement;
     fetch(messageForm.action, {
       method: messageForm.method,
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ messageBody: messageBodyInput.value }),
+      body: JSON.stringify({
+        messageBody: messageBodyInput.value,
+        connectionId: connectionIdInput.value,
+      }),
     });
   });
 </script>
