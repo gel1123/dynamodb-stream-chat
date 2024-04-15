@@ -15,12 +15,6 @@ export const MessageEntity = new Entity(
         required: true,
         readOnly: true,
       },
-      /** 接続ID */
-      connectionId: {
-        type: "string",
-        required: true,
-        readOnly: true,
-      },
       /** 作成日時 */
       createdAt: {
         type: "number",

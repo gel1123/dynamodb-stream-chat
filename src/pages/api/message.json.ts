@@ -6,7 +6,6 @@ export const POST: APIRoute = async (args) => {
   try {
     const json = await args.request.json();
     const messageBody = json.messageBody;
-    const connectionId = json.connectionId;
     if (!messageBody) {
       return new Response(
         JSON.stringify({
@@ -15,17 +14,8 @@ export const POST: APIRoute = async (args) => {
         { status: 400 }
       );
     }
-    if (!connectionId) {
-      return new Response(
-        JSON.stringify({
-          error: "connectionId is required",
-        }),
-        { status: 400 }
-      );
-    }
     const message: MessageEntityType = {
       messageId: v4(),
-      connectionId,
       body: messageBody,
       createdAt: Date.now(),
     };

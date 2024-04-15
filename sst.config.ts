@@ -2,6 +2,8 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
+// 参考: https://dev.classmethod.jp/articles/cdk-api-gateway-web-socket/
+
 export default $config({
   app(input) {
     return {
@@ -11,6 +13,11 @@ export default $config({
     };
   },
   async run() {
+    // https://ion.sst.dev/docs/providers/#functions
+    const current = await aws.getCallerIdentity({});
+    const accountId = current.accountId;
+    const region = (await aws.getRegion({})).name;
+
     // DynamoDB ----------------------------------------------------------
     const table = new sst.aws.Dynamo("DscTable", {
       fields: {
@@ -141,12 +148,27 @@ export default $config({
     );
 
     // DynamoDB Streams --------------------------------------------------
+    // execute-api:ManageConnectionsの許可が必要
+    // MEMO: filter定義も可能 https://ion.sst.dev/docs/component/aws/dynamo/
     const subscriber = table.subscribe({
       handler: "src/api/trigger.handler",
       link: [table],
       environment: {
         WS_API_URL: wsApi.apiEndpoint,
+        STAGE: $app.stage,
       },
+      permissions: [
+        // {
+        //   actions: ["execute-api:ManageConnections"],
+        //   resources: [
+        //     pulumi.interpolate`arn:aws:execute-api:${region}:${accountId}:${wsApi.id}/${$app.stage}/POST/@connections/*`,
+        //   ],
+        // },
+        {
+          actions: ["*"],
+          resources: ["*"],
+        },
+      ],
     });
 
     // Astro -------------------------------------------------------------

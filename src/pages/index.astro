@@ -1,7 +1,6 @@
 ---
 import { MessageEntity } from "@/entities/message";
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import { Resource } from "sst";
 const wsApiUrl = `${import.meta.env.WS_API_URL}/${import.meta.env.STAGE}/`;
 const { data: messages } = await MessageEntity.query
   .orderByCreatedAt({})
@@ -12,17 +11,22 @@ const { data: messages } = await MessageEntity.query
   <h2>dynamodb-stream-chat</h2>
   <p>{wsApiUrl}</p>
   <div id="messages" class="mt-4">
-    <ul>
-      {
-        messages.map((message) => (
-          <li>
-            <p>{message.createdAt}</p>
-            <p>{message.body}</p>
-            <p>{message.connectionId}</p>
-          </li>
-        ))
-      }
-    </ul>
+    {
+      messages.map((message) => (
+        <div class="border-b py-2">
+          <div class="text-xs text-neutral-400">
+            {
+              // message.createdAt intlでフォーマット
+              new Intl.DateTimeFormat("ja-JP", {
+                dateStyle: "short",
+                timeStyle: "short",
+              }).format(new Date(message.createdAt))
+            }
+          </div>
+          <div>{message.body}</div>
+        </div>
+      ))
+    }
   </div>
   <form
     action="/api/message.json"
@@ -31,7 +35,6 @@ const { data: messages } = await MessageEntity.query
     class="mt-4"
     id="messageForm"
   >
-    <input type="hidden" id="connectionId" name="connectionId" />
     <input
       type="text"
       id="messageBody"
@@ -52,27 +55,27 @@ const { data: messages } = await MessageEntity.query
   const wsApiUrl = document.getElementById("messageForm")!.dataset.wsApiUrl!;
   const ws = new WebSocket(wsApiUrl);
 
-  // WebSocketのConnectionIdをセットする
-  ws.onopen = () => {
-    const connectionId = document.getElementById(
-      "connectionId"
-    ) as HTMLInputElement;
-    connectionId.value = ws.url.split("/").pop() as string;
-    console.log("[onopen] ", connectionId.value);
-  };
-
   // 受信したメッセージを表示する
   ws.onmessage = (event) => {
     console.log("[onmessage] ", event.data);
-    const messages = document.getElementById("messages")!;
-    const message = JSON.parse(event.data);
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <p>${message.createdAt}</p>
-      <p>${message.body}</p>
-      <p>${message.connectionId}</p>
+    const messagesArea = document.getElementById("messages")!;
+    const messages = JSON.parse(event.data);
+    console.log(messages);
+    for (const message of messages) {
+      const messageElement = document.createElement("div");
+      messageElement.classList.add("border-b", "py-2");
+      messageElement.innerHTML = `
+      <div class="text-xs text-neutral-400">
+        ${new Intl.DateTimeFormat("ja-JP", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(new Date(message.createdAt))}
+      </div>
+      <div>${message.body}</div>
     `;
-    messages.querySelector("ul")!.prepend(li);
+      // 末尾に追加
+      messagesArea.appendChild(messageElement);
+    }
   };
 
   // 画面遷移前にWebSocketを閉じる
@@ -95,23 +98,25 @@ const { data: messages } = await MessageEntity.query
   const messageForm = document.getElementById(
     "messageForm"
   )! as HTMLFormElement;
-  messageForm.addEventListener("submit", (event) => {
+  messageForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const messageBodyInput = document.getElementById(
       "messageBody"
     ) as HTMLInputElement;
-    const connectionIdInput = document.getElementById(
-      "connectionId"
-    ) as HTMLInputElement;
-    fetch(messageForm.action, {
+    const result = await fetch(messageForm.action, {
       method: messageForm.method,
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         messageBody: messageBodyInput.value,
-        connectionId: connectionIdInput.value,
       }),
     });
+    if (result.ok) {
+      messageBodyInput.value = "";
+    } else {
+      console.error(result.statusText);
+      alert("メッセージの送信に失敗しました");
+    }
   });
 </script>
