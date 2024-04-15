@@ -78,6 +78,11 @@ const { data: messages } = await MessageEntity.query
     ws.close();
   });
 
+  // WebSocketのエラーを表示する
+  ws.onerror = (event) => {
+    console.error("[onerror] ", event);
+  };
+
   // メッセージ送信
   const messageForm = document.getElementById(
     "messageForm"
