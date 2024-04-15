@@ -105,23 +105,6 @@ export default $config({
       authorizationType: "NONE",
       target: pulumi.interpolate`integrations/${disconnectIntegration.id}`,
     });
-    // メッセージ受信ルート
-    const messageIntegration = new aws.apigatewayv2.Integration(
-      "DscMessageIntegration",
-      {
-        apiId: wsApi.id,
-        integrationType: "AWS_PROXY",
-        integrationUri: chatHandler.arn,
-        integrationMethod: "POST",
-        payloadFormatVersion: "1.0",
-      }
-    );
-    const messageRoute = new aws.apigatewayv2.Route("DscMessageRoute", {
-      apiId: wsApi.id,
-      routeKey: "message",
-      authorizationType: "NONE",
-      target: pulumi.interpolate`integrations/${messageIntegration.id}`,
-    });
 
     // DynamoDB Streams --------------------------------------------------
     const subscriber = table.subscribe({
