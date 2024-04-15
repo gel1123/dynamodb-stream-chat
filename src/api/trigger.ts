@@ -55,9 +55,15 @@ export const handler: DynamoDBStreamHandler = async (event) => {
         ConnectionId: connectionId,
       });
     } catch (error) {
-      console.log(`Connection ${connectionId} is not valid. error is `, error);
-      // 有効でないコネクションは削除
-      await ConnectionEntity.delete({ connectionId }).go();
+      const _error = error as Error;
+      // GoneException: UnknownError が出力されるケースがある
+      if (_error.name === "GoneException") {
+        console.log(`Connection ${connectionId} is gone.`);
+        // 有効でないコネクションは削除
+        await ConnectionEntity.delete({ connectionId }).go();
+        return null;
+      }
+      console.error(_error);
       return null;
     }
     // 接続先へのメッセージ送信

@@ -1,7 +1,7 @@
 ---
 import { MessageEntity } from "@/entities/message";
 import BaseLayout from "@/layouts/BaseLayout.astro";
-const wsApiUrl = `${import.meta.env.WS_API_URL}/${import.meta.env.STAGE}/`;
+const wsApiUrl = `${import.meta.env.WS_API_URL}/${import.meta.env.STAGE}/?f=F01`;
 const { data: messages } = await MessageEntity.query
   .orderByCreatedAt({})
   .go({ pages: "all" });
