@@ -54,8 +54,8 @@ export const handler: DynamoDBStreamHandler = async (event) => {
       await api.getConnection({
         ConnectionId: connectionId,
       });
-    } catch {
-      console.log(`Connection ${connectionId} is not valid`);
+    } catch (error) {
+      console.log(`Connection ${connectionId} is not valid. error is `, error);
       // 有効でないコネクションは削除
       await ConnectionEntity.delete({ connectionId }).go();
       return null;

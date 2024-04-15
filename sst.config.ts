@@ -158,15 +158,14 @@ export default $config({
         STAGE: $app.stage,
       },
       permissions: [
-        // {
-        //   actions: ["execute-api:ManageConnections"],
-        //   resources: [
-        //     pulumi.interpolate`arn:aws:execute-api:${region}:${accountId}:${wsApi.id}/${$app.stage}/POST/@connections/*`,
-        //   ],
-        // },
         {
-          actions: ["*"],
-          resources: ["*"],
+          actions: ["execute-api:ManageConnections"],
+          resources: [
+            // 下記のようなリソースに対して許可が必要なので...
+            // - arn:aws:execute-api:ap-northeast-1:********6490:xeihbfzym0/sig/GET/@connections/{connectionId}
+            // - arn:aws:execute-api:ap-northeast-1:********6490:xeihbfzym0/sig/POST/@connections/{connectionId}
+            pulumi.interpolate`arn:aws:execute-api:${region}:${accountId}:${wsApi.id}/${$app.stage}/*`,
+          ],
         },
       ],
     });
