@@ -7,6 +7,6 @@ import { Resource } from "sst";
 export const Client = new DynamoDBClient({});
 
 export const Configuration: EntityConfiguration = {
-  table: Resource.CtTable.name,
+  table: Resource.DscTable.name,
   client: Client,
 };

@@ -1,9 +1,98 @@
 ---
+import { MessageEntity } from "@/entities/message";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 const wsApiUrl = import.meta.env.PUBLIC_WS_API_URL;
+const { data: messages } = await MessageEntity.query
+  .orderByCreatedAt({})
+  .go({ pages: "all" });
 ---
 
 <BaseLayout title="dynamodb-stream-chat">
   <h2>dynamodb-stream-chat</h2>
-  <div>wsApiUrl: {wsApiUrl}</div>
+  <div id="messages" class="mt-4">
+    <ul>
+      {
+        messages.map((message) => (
+          <li>
+            <p>{message.createdAt}</p>
+            <p>{message.body}</p>
+            <p>{message.connectionId}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+  <form
+    action="/api/message.json"
+    method="POST"
+    data-ws-api-url={wsApiUrl}
+    class="mt-4"
+    id="messageForm"
+  >
+    <input type="hidden" id="connectionId" name="connectionId" />
+    <input
+      type="text"
+      id="messageBody"
+      name="messageBody"
+      placeholder="メッセージを入力してください"
+      class="w-full"
+    />
+    <div class="flex justify-end mt-2">
+      <button type="submit" class="p-2 bg-blue-500 text-white rounded"
+        >送信</button
+      >
+    </div>
+  </form>
 </BaseLayout>
+
+<script>
+  // WebSocketに接続する
+  const wsApiUrl = document.getElementById("messageForm")!.dataset.wsApiUrl!;
+  const ws = new WebSocket(wsApiUrl);
+
+  // WebSocketのConnectionIdをセットする
+  ws.onopen = () => {
+    const connectionId = document.getElementById(
+      "connectionId"
+    ) as HTMLInputElement;
+    connectionId.value = ws.url.split("/").pop() as string;
+  };
+
+  // 受信したメッセージを表示する
+  ws.onmessage = (event) => {
+    console.log("[onmessage] ", event.data);
+    const messages = document.getElementById("messages")!;
+    const message = JSON.parse(event.data);
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <p>${message.createdAt}</p>
+      <p>${message.body}</p>
+      <p>${message.connectionId}</p>
+    `;
+    messages.querySelector("ul")!.prepend(li);
+  };
+
+  // 画面遷移前にWebSocketを閉じる
+  window.addEventListener("beforeunload", () => {
+    console.log("beforeunload");
+    ws.close();
+  });
+
+  // メッセージ送信
+  const messageForm = document.getElementById(
+    "messageForm"
+  )! as HTMLFormElement;
+  messageForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const messageBodyInput = document.getElementById(
+      "messageBody"
+    ) as HTMLInputElement;
+    fetch(messageForm.action, {
+      method: messageForm.method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ messageBody: messageBodyInput.value }),
+    });
+  });
+</script>
